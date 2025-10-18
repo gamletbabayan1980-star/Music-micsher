@@ -52,6 +52,23 @@
             margin: 0 auto;
         }
         
+        /* User gesture required banner */
+        .gesture-banner {
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+            color: white;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 16px 0;
+            font-weight: bold;
+            box-shadow: var(--accent-glow);
+            display: none;
+        }
+        
+        .gesture-banner.active {
+            display: block;
+        }
+        
         /* Header Styles */
         header {
             text-align: center;
@@ -829,6 +846,11 @@
 </head>
 <body>
     <div class="container">
+        <!-- User gesture required banner -->
+        <div class="gesture-banner" id="gesture-banner">
+            <i class="fas fa-hand-point-up"></i> Tap anywhere to enable audio!
+        </div>
+        
         <!-- Header -->
         <header>
             <h1 class="logo">80s RETRO PLAYER</h1>
@@ -998,7 +1020,7 @@
     </div>
     
     <!-- Audio element -->
-    <audio id="audio-player"></audio>
+    <audio id="audio-player" preload="metadata"></audio>
     
     <script>
         // Mock data for demo tracks
@@ -1040,6 +1062,8 @@
         let playlist = [...DEMO_TRACKS];
         let activePlaylist = 'default';
         let playlists = { default: [...DEMO_TRACKS] };
+        let audioContextInitialized = false;
+        let userGestureOccurred = false;
         
         // DOM Elements
         const audioPlayer = document.getElementById('audio-player');
@@ -1058,6 +1082,7 @@
         const albumArtContainer = document.querySelector('.album-art-container');
         const playlistItems = document.getElementById('playlist-items');
         const playlistSelector = document.getElementById('playlist-selector');
+        const gestureBanner = document.getElementById('gesture-banner');
         
         // Search elements
         const searchInput = document.getElementById('search-input');
@@ -1104,6 +1129,9 @@
             
             // Initialize canvas
             setupCanvas();
+            
+            // Check if we need user gesture for audio
+            checkAudioPolicy();
         }
         
         function setupCanvas() {
@@ -1157,6 +1185,55 @@
             
             // Window resize
             window.addEventListener('resize', setupCanvas);
+            
+            // User gesture detection
+            document.addEventListener('touchstart', handleUserGesture, { once: true });
+            document.addEventListener('mousedown', handleUserGesture, { once: true });
+        }
+        
+        // Handle user gesture to unlock audio
+        function handleUserGesture() {
+            userGestureOccurred = true;
+            gestureBanner.classList.remove('active');
+            
+            // Try to initialize audio context
+            if (!audioContextInitialized) {
+                initializeAudioContext();
+            }
+        }
+        
+        // Check audio policy and show banner if needed
+        function checkAudioPolicy() {
+            // Check if we can play audio without user gesture
+            const promise = audioPlayer.play();
+            if (promise !== undefined) {
+                promise.then(() => {
+                    // Audio can play without gesture
+                    audioPlayer.pause();
+                }).catch(() => {
+                    // User gesture required
+                    gestureBanner.classList.add('active');
+                });
+            }
+        }
+        
+        // Initialize audio context after user gesture
+        function initializeAudioContext() {
+            if (audioContextInitialized) return;
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                audioContextInitialized = true;
+                
+                // If a track is already selected, connect it
+                if (currentTrack) {
+                    setupAudioContext();
+                }
+            } catch (e) {
+                console.error('AudioContext initialization failed:', e);
+            }
         }
         
         // Search functionality
@@ -1254,9 +1331,18 @@
             // Optionally play the track immediately
             handleTrackChange(newTrack);
             if (!isPlaying) {
-                audioPlayer.play();
-                isPlaying = true;
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                // Ensure user gesture has occurred before playing
+                if (userGestureOccurred) {
+                    audioPlayer.play().catch(e => {
+                        console.error('Playback failed:', e);
+                        alert('Playback failed. Please try another track.');
+                    });
+                    isPlaying = true;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    // Show banner if user hasn't interacted yet
+                    gestureBanner.classList.add('active');
+                }
             }
         }
         
@@ -1290,8 +1376,10 @@
             audioPlayer.src = track.url;
             audioPlayer.load();
             
-            // Connect to Web Audio API for visualization
-            setupAudioContext();
+            // Connect to Web Audio API for visualization (if initialized)
+            if (audioContextInitialized) {
+                setupAudioContext();
+            }
             
             // Update playlist UI
             updateActiveTrackInPlaylist();
@@ -1308,6 +1396,12 @@
                 audioPlayer.pause();
                 playBtn.innerHTML = '<i class="fas fa-play"></i>';
             } else {
+                // Check if user has interacted with the page
+                if (!userGestureOccurred) {
+                    gestureBanner.classList.add('active');
+                    return;
+                }
+                
                 audioPlayer.play().catch(e => {
                     console.error('Playback failed:', e);
                     alert('Playback failed. Please try another track.');
@@ -1338,9 +1432,17 @@
             
             handleTrackChange(playlist[nextIndex]);
             if (!isPlaying) {
-                audioPlayer.play();
-                isPlaying = true;
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                // Check if user has interacted with the page
+                if (userGestureOccurred) {
+                    audioPlayer.play().catch(e => {
+                        console.error('Playback failed:', e);
+                        alert('Playback failed. Please try another track.');
+                    });
+                    isPlaying = true;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    gestureBanner.classList.add('active');
+                }
             }
         }
         
@@ -1365,9 +1467,17 @@
             
             handleTrackChange(playlist[prevIndex]);
             if (!isPlaying) {
-                audioPlayer.play();
-                isPlaying = true;
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                // Check if user has interacted with the page
+                if (userGestureOccurred) {
+                    audioPlayer.play().catch(e => {
+                        console.error('Playback failed:', e);
+                        alert('Playback failed. Please try another track.');
+                    });
+                    isPlaying = true;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    gestureBanner.classList.add('active');
+                }
             }
         }
         
@@ -1415,7 +1525,10 @@
         function handleTrackEnded() {
             if (repeatMode === 'one') {
                 audioPlayer.currentTime = 0;
-                audioPlayer.play();
+                // Check if user has interacted before replaying
+                if (userGestureOccurred) {
+                    audioPlayer.play();
+                }
             } else {
                 nextTrack();
             }
@@ -1423,11 +1536,7 @@
         
         // Visualization
         function setupAudioContext() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-            }
+            if (!audioContext || !analyser) return;
             
             // Disconnect previous source if exists
             if (source) {
@@ -1498,9 +1607,17 @@
                 item.addEventListener('click', () => {
                     handleTrackChange(track);
                     if (!isPlaying) {
-                        audioPlayer.play();
-                        isPlaying = true;
-                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        // Check if user has interacted with the page
+                        if (userGestureOccurred) {
+                            audioPlayer.play().catch(e => {
+                                console.error('Playback failed:', e);
+                                alert('Playback failed. Please try another track.');
+                            });
+                            isPlaying = true;
+                            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        } else {
+                            gestureBanner.classList.add('active');
+                        }
                     }
                 });
                 playlistItems.appendChild(item);
