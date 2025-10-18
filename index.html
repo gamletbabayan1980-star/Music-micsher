@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Микшер аудиофайлов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .file-upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .file-upload {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .file-upload input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .volume-control label {
+            width: 150px;
+            font-weight: bold;
+        }
+        
+        .volume-control input {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .volume-control input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            cursor: pointer;
+        }
+        
+        .volume-value {
+            width: 50px;
+            text-align: center;
+            margin-left: 10px;
+        }
+        
+        .mix-controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .mix-btn {
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+        }
+        
+        .mix-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.7);
+        }
+        
+        .mix-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .result-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .download-btn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        
+        .visualization {
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .waveform {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .wave-bar {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            background: #4ecdc4;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Микшер Аудиофайлов 🎵</h1>
+        
+        <div class="file-upload-section">
+            <div class="file-upload">
+                <label for="audio1">Выберите первый аудиофайл:</label>
+                <input type="file" id="audio1" accept="audio/*">
+            </div>
+            
+            <div class="volume-control">
+                <label>Громкость 1-го файла:</label>
+                <input type="range" id="volume1" min="0" max="1" step="0.01" value="0.7">
+                <div class="volume-value" id="volume1-value">70%</div>
+            </div>
+            
+            <div class="file-upload">
+                <label for="audio2">Выберите второй аудиофайл:</label>
+                <input type="file" id="audio2" accept="audio/*">
+            </div>
+            
+            <div class="volume-control">
+                <label>Громкость 2-го файла:</label>
+                <input type="range" id="volume2" min="0" max="1" step="0.01" value="0.7">
+                <div class="volume-value" id="volume2-value">70%</div>
+            </div>
+        </div>
+        
+        <div class="visualization">
+            <div class="waveform" id="waveform"></div>
+        </div>
+        
+        <div class="mix-controls">
+            <button class="mix-btn" id="mix-btn" disabled>Смешать аудиофайлы</button>
+        </div>
+        
+        <div class="status" id="status">
+            Загрузите оба аудиофайла для начала микширования
+        </div>
+        
+        <div class="result-section" id="result-section" style="display: none;">
+            <h2>Результат микширования</h2>
+            <audio class="audio-player" id="result-audio" controls></audio>
+            <button class="download-btn" id="download-btn">Скачать результат</button>
+        </div>
+        
+        <div class="instructions">
+            <h3>Инструкция по использованию:</h3>
+            <ul>
+                <li>Загрузите два аудиофайла в форматах MP3, WAV или OGG</li>
+                <li>Отрегулируйте громкость каждого файла с помощью ползунков</li>
+                <li>Нажмите "Смешать аудиофайлы" для создания микса</li>
+                <li>Прослушайте результат и скачайте готовый файл</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Элементы DOM
+            const audio1Input = document.getElementById('audio1');
+            const audio2Input = document.getElementById('audio2');
+            const volume1Slider = document.getElementById('volume1');
+            const volume2Slider = document.getElementById('volume2');
+            const volume1Value = document.getElementById('volume1-value');
+            const volume2Value = document.getElementById('volume2-value');
+            const mixBtn = document.getElementById('mix-btn');
+            const statusDiv = document.getElementById('status');
+            const resultSection = document.getElementById('result-section');
+            const resultAudio = document.getElementById('result-audio');
+            const downloadBtn = document.getElementById('download-btn');
+            const waveform = document.getElementById('waveform');
+            
+            // Глобальные переменные
+            let audioContext;
+            let audio1Buffer = null;
+            let audio2Buffer = null;
+            let mixedAudioBuffer = null;
+            
+            // Обновление значений громкости
+            volume1Slider.addEventListener('input', () => {
+                volume1Value.textContent = Math.round(volume1Slider.value * 100) + '%';
+            });
+            
+            volume2Slider.addEventListener('input', () => {
+                volume2Value.textContent = Math.round(volume2Slider.value * 100) + '%';
+            });
+            
+            // Загрузка аудиофайлов
+            audio1Input.addEventListener('change', (e) => {
+                loadAudioFile(e.target.files[0], 1);
+            });
+            
+            audio2Input.addEventListener('change', (e) => {
+                loadAudioFile(e.target.files[0], 2);
+            });
+            
+            function loadAudioFile(file, number) {
+                if (!file) return;
+                
+                statusDiv.textContent = `Загружается файл ${number}...`;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const arrayBuffer = e.target.result;
+                    
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    
+                    audioContext.decodeAudioData(arrayBuffer)
+                        .then(buffer => {
+                            if (number === 1) {
+                                audio1Buffer = buffer;
+                            } else {
+                                audio2Buffer = buffer;
+                            }
+                            
+                            statusDiv.textContent = `Файл ${number} загружен. ${audio1Buffer && audio2Buffer ? 'Оба файла загружены. Можете миксовать.' : 'Загрузите второй файл.'}`;
+                            
+                            // Активировать кнопку если оба файла загружены
+                            mixBtn.disabled = !(audio1Buffer && audio2Buffer);
+                        })
+                        .catch(err => {
+                            console.error('Ошибка декодирования аудио:', err);
+                            statusDiv.textContent = `Ошибка загрузки файла ${number}: ${err.message}`;
+                        });
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+            
+            // Микширование аудио
+            mixBtn.addEventListener('click', () => {
+                if (!audio1Buffer || !audio2Buffer) {
+                    statusDiv.textContent = 'Пожалуйста, загрузите оба аудиофайла';
+                    return;
+                }
+                
+                statusDiv.textContent = 'Создание микса...';
+                
+                try {
+                    mixedAudioBuffer = mixAudioBuffers(
+                        audio1Buffer,
+                        audio2Buffer,
+                        parseFloat(volume1Slider.value),
+                        parseFloat(volume2Slider.value)
+                    );
+                    
+                    // Воспроизвести результат
+                    playMixedAudio();
+                    
+                    // Показать результат
+                    resultSection.style.display = 'block';
+                    
+                    // Создать URL для аудио и установить в плеер
+                    const audioUrl = createAudioUrl(mixedAudioBuffer);
+                    resultAudio.src = audioUrl;
+                    
+                    statusDiv.textContent = 'Миксирование завершено!';
+                } catch (error) {
+                    console.error('Ошибка при микшировании:', error);
+                    statusDiv.textContent = `Ошибка микширования: ${error.message}`;
+                }
+            });
+            
+            // Функция микширования аудио
+            function mixAudioBuffers(buffer1, buffer2, volume1, volume2) {
+                // Определить максимальную длину
+                const length = Math.max(buffer1.length, buffer2.length);
+                const sampleRate = buffer1.sampleRate;
+                
+                // Создать новый буфер с 2 каналами (стерео)
+                const mixedBuffer = audioContext.createBuffer(2, length, sampleRate);
+                
+                // Получить данные каналов
+                const channel1Data = mixedBuffer.getChannelData(0);
+                const channel2Data = mixedBuffer.getChannelData(1);
+                
+                // Данные из первого буфера
+                const buffer1Channel1 = buffer1.getChannelData(0);
+                const buffer1Channel2 = buffer1.numberOfChannels > 1 ? buffer1.getChannelData(1) : buffer1.getChannelData(0);
+                
+                // Данные из второго буфера
+                const buffer2Channel1 = buffer2.getChannelData(0);
+                const buffer2Channel2 = buffer2.numberOfChannels > 1 ? buffer2.getChannelData(1) : buffer2.getChannelData(0);
+                
+                // Микширование
+                for (let i = 0; i < length; i++) {
+                    const sample1_1 = i < buffer1.length ? buffer1Channel1[i] : 0;
+                    const sample1_2 = i < buffer1.length ? buffer1Channel2[i] : 0;
+                    const sample2_1 = i < buffer2.length ? buffer2Channel1[i] : 0;
+                    const sample2_2 = i < buffer2.length ? buffer2Channel2[i] : 0;
+                    
+                    channel1Data[i] = sample1_1 * volume1 + sample2_1 * volume2;
+                    channel2Data[i] = sample1_2 * volume1 + sample2_2 * volume2;
+                }
+                
+                return mixedBuffer;
+            }
+            
+            // Воспроизвести смешанное аудио
+            function playMixedAudio() {
+                if (!mixedAudioBuffer) return;
+                
+                const source = audioContext.createBufferSource();
+                source.buffer = mixedAudioBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+            }
+            
+            // Создать URL для аудио
+            function createAudioUrl(buffer) {
+                // Создать WAV буфер из AudioBuffer
+                const wavBlob = audioBufferToWav(buffer);
+                return URL.createObjectURL(wavBlob);
+            }
+            
+            // Конвертировать AudioBuffer в WAV
+            function audioBufferToWav(buffer) {
+                const length = buffer.length;
+                const numberOfChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2);
+                const view = new DataView(arrayBuffer);
+                
+                // Заголовок WAV
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + length * numberOfChannels * 2, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, numberOfChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+                view.setUint16(32, numberOfChannels * 2, true);
+                view.setUint16(34, 16, true);
+                writeString(36, 'data');
+                view.setUint32(40, length * numberOfChannels * 2, true);
+                
+                // Данные
+                let offset = 44;
+                for (let i = 0; i < length; i++) {
+                    for (let channel = 0; channel < numberOfChannels; channel++) {
+                        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+                        const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                        view.setInt16(offset, int16, true);
+                        offset += 2;
+                    }
+                }
+                
+                return new Blob([arrayBuffer], { type: 'audio/wav' });
+            }
+            
+            // Скачивание результата
+            downloadBtn.addEventListener('click', () => {
+                if (!mixedAudioBuffer) {
+                    statusDiv.textContent = 'Нет аудио для скачивания';
+                    return;
+                }
+                
+                const wavBlob = audioBufferToWav(mixedAudioBuffer);
+                const url = URL.createObjectURL(wavBlob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'mixed_audio.wav';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                URL.revokeObjectURL(url);
+            });
+            
+            // Создание визуализации волн
+            function createWaveformVisualization() {
+                waveform.innerHTML = '';
+                
+                for (let i = 0; i < 80; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'wave-bar';
+                    bar.style.left = `${i * 4}px`;
+                    bar.style.height = `${Math.random() * 60 + 10}px`;
+                    waveform.appendChild(bar);
+                }
+            }
+            
+            // Инициализация визуализации
+            createWaveformVisualization();
+        });
+    </script>
+</body>
+</html>
